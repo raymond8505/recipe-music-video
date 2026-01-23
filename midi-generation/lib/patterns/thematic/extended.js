@@ -5,8 +5,11 @@
  */
 
 import { getContourDirection, getScaleStep } from "../../note-utils.js";
-
-const LEGATO_DURATION_FACTOR = 0.95;
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply thematic extended pattern to a track.
@@ -28,22 +31,35 @@ function apply(midi, options) {
     );
   }
 
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.thematic_extended;
+  const durationFactor = config.durationFactor;
+
   const { notes, rhythm } = theme;
-  const { start_time, end_time, velocity_avg = 80 } = section;
+  const { end_time, velocity_avg = 80 } = section;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Apply velocity modifier
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
   const quarterNote = 60 / tempo;
-  let currentTime = start_time;
+  let currentTime = startTime;
 
   // Step 1: Play the full theme
   notes.forEach((pitch, index) => {
     const beatDuration = rhythm[index] || 1;
     const duration = beatDuration * quarterNote;
 
+    // Ensure we don't exceed end_time
+    if (currentTime + duration * durationFactor > end_time) return;
+
     track.addNote({
       midi: pitch,
       time: currentTime,
-      duration: duration * LEGATO_DURATION_FACTOR,
-      velocity: velocity_avg / 127,
+      duration: duration * durationFactor,
+      velocity: adjustedVelocity / 127,
     });
 
     currentTime += duration;
@@ -52,6 +68,7 @@ function apply(midi, options) {
   // Step 2: Continue with stepwise motion
   const direction = getContourDirection(notes);
   const stepDirection = direction === 0 ? 1 : direction; // Default to ascending if static
+  const extensionStepSize = config.extensionStepSize || 1;
 
   let currentPitch = notes[notes.length - 1];
 
@@ -61,10 +78,10 @@ function apply(midi, options) {
   const extensionDuration = extensionBeatDuration * quarterNote;
 
   // Continue until section end
-  while (currentTime + extensionDuration <= end_time) {
-    // Move by one step in the contour direction
+  while (currentTime + extensionDuration * durationFactor <= end_time) {
+    // Move by configured step size in the contour direction
     if (scale.length > 0) {
-      currentPitch = getScaleStep(currentPitch, scale, stepDirection);
+      currentPitch = getScaleStep(currentPitch, scale, stepDirection * extensionStepSize);
     } else {
       // Chromatic stepwise motion
       currentPitch += stepDirection * 2; // Whole step
@@ -78,8 +95,8 @@ function apply(midi, options) {
     track.addNote({
       midi: currentPitch,
       time: currentTime,
-      duration: extensionDuration * LEGATO_DURATION_FACTOR,
-      velocity: velocity_avg / 127,
+      duration: extensionDuration * durationFactor,
+      velocity: adjustedVelocity / 127,
     });
 
     currentTime += extensionDuration;

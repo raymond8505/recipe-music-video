@@ -1,12 +1,14 @@
 /**
  * Thematic Fragmented Pattern
- * Takes first 3 notes of theme, repeats the fragment.
- * If sequence is true, transposes each repetition up by 2 semitones.
+ * Takes first N notes of theme (from config), repeats the fragment.
+ * If sequence is true, transposes each repetition by configured semitones.
  */
 
-const LEGATO_DURATION_FACTOR = 0.95;
-const FRAGMENT_LENGTH = 3;
-const SEQUENCE_TRANSPOSITION = 2; // Semitones
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply thematic fragmented pattern to a track.
@@ -21,22 +23,32 @@ const SEQUENCE_TRANSPOSITION = 2; // Semitones
 function apply(midi, options) {
   const { track, section, theme, tempo } = options;
 
-  if (!theme || !theme.notes || theme.notes.length < FRAGMENT_LENGTH) {
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.thematic_fragmented;
+  const fragmentLength = config.fragmentLength;
+
+  if (!theme || !theme.notes || theme.notes.length < fragmentLength) {
     throw new Error(
-      `Thematic fragmented requires theme with at least ${FRAGMENT_LENGTH} notes`,
+      `Thematic fragmented requires theme with at least ${fragmentLength} notes`,
     );
   }
 
   const { notes, rhythm } = theme;
-  const { start_time, end_time, velocity_avg = 80, sequence = false } = section;
+  const { end_time, velocity_avg = 80, sequence = false } = section;
 
-  // Extract fragment (first 3 notes and their rhythms)
-  const fragmentNotes = notes.slice(0, FRAGMENT_LENGTH);
-  const fragmentRhythm = rhythm.slice(0, FRAGMENT_LENGTH);
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Apply velocity modifier
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
+
+  // Extract fragment (first N notes and their rhythms from config)
+  const fragmentNotes = notes.slice(0, fragmentLength);
+  const fragmentRhythm = rhythm.slice(0, fragmentLength);
 
   // Calculate timing
   const quarterNote = 60 / tempo;
-  const sectionDuration = end_time - start_time;
+  const durationFactor = config.durationFactor;
 
   // Calculate how long one fragment takes
   const fragmentDuration = fragmentRhythm.reduce(
@@ -44,13 +56,13 @@ function apply(midi, options) {
     0,
   );
 
-  let currentTime = start_time;
+  let currentTime = startTime;
   let repetition = 0;
 
   // Repeat fragment until section ends
   while (currentTime + fragmentDuration <= end_time) {
-    // Calculate transposition for this repetition
-    const transposition = sequence ? repetition * SEQUENCE_TRANSPOSITION : 0;
+    // Calculate transposition for this repetition using config interval
+    const transposition = sequence ? repetition * config.sequenceInterval : 0;
 
     // Play the fragment
     fragmentNotes.forEach((pitch, index) => {
@@ -64,8 +76,8 @@ function apply(midi, options) {
         track.addNote({
           midi: transposedPitch,
           time: currentTime,
-          duration: duration * LEGATO_DURATION_FACTOR,
-          velocity: velocity_avg / 127,
+          duration: duration * durationFactor,
+          velocity: adjustedVelocity / 127,
         });
       }
 

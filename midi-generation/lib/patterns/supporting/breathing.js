@@ -1,16 +1,18 @@
 /**
  * Gentle Breathing Pattern
- * One note every 3 beats (lots of space).
+ * One note every few beats (lots of space).
  * Stepwise motion (move by 1-2 scale degrees).
- * Sustained notes (1.2x beat duration).
+ * Sustained notes.
  * Calm, spacious feel.
  */
 
 import { getScaleStep, noteToMidi } from "../../note-utils.js";
-
-const BEATS_BETWEEN_NOTES = 3;
-const SUSTAIN_FACTOR = 1.2;
-const MAX_STEP_SIZE = 2; // Scale degrees
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+  humanizeValue,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply gentle breathing pattern to a track.
@@ -26,12 +28,22 @@ const MAX_STEP_SIZE = 2; // Scale degrees
 function apply(midi, options) {
   const { track, section, tempo, scale = [], pitches = [] } = options;
 
-  const { start_time, end_time, velocity_avg = 70, pitch_range } = section;
+  const { end_time, velocity_avg = 70, pitch_range } = section;
 
-  // Calculate timing
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.gentle_breathing;
+  const spacingConfig = PATTERN_STRATEGIES.rhythmicSpacing.breathing;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Calculate timing from config
   const quarterNote = 60 / tempo;
-  const noteInterval = BEATS_BETWEEN_NOTES * quarterNote;
-  const noteDuration = quarterNote * SUSTAIN_FACTOR;
+  const baseNoteInterval = spacingConfig.interval * quarterNote;
+  const noteDuration = quarterNote * config.noteDuration;
+
+  // Apply velocity modifier
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
   // Determine available pitches
   let availablePitches = pitches.length > 0 ? pitches : scale;
@@ -39,6 +51,7 @@ function apply(midi, options) {
     // Create a simple range if no pitches provided
     const lowNote = pitch_range ? noteToMidi(pitch_range.low) : 48;
     const highNote = pitch_range ? noteToMidi(pitch_range.high) : 72;
+    availablePitches = [];
     for (let n = lowNote; n <= highNote; n++) {
       availablePitches.push(n);
     }
@@ -46,29 +59,35 @@ function apply(midi, options) {
 
   // Start in the middle of the range
   let currentPitch = availablePitches[Math.floor(availablePitches.length / 2)];
-  let currentTime = start_time;
+  let currentTime = startTime;
 
   // Simple seeded random for consistent results
-  let seed = Math.floor(start_time * 1000) % 1000;
+  let seed = Math.floor(startTime * 1000) % 1000;
   const pseudoRandom = () => {
     seed = (seed * 1103515245 + 12345) % 2147483648;
     return seed / 2147483648;
   };
 
   while (currentTime + noteDuration <= end_time) {
+    // Apply humanization to timing
+    const humanizedInterval = humanizeValue(baseNoteInterval, spacingConfig.humanize, pseudoRandom);
+
     track.addNote({
       midi: currentPitch,
       time: currentTime,
       duration: noteDuration,
-      velocity: velocity_avg / 127,
+      velocity: adjustedVelocity / 127,
     });
 
-    currentTime += noteInterval;
+    currentTime += humanizedInterval;
 
-    // Move stepwise for next note
-    if (scale.length > 0) {
-      const step =
-        Math.floor(pseudoRandom() * (MAX_STEP_SIZE * 2 + 1)) - MAX_STEP_SIZE;
+    // Move stepwise for next note based on config
+    if (config.stepwise && scale.length > 0) {
+      const maxStep = config.maxInterval;
+      const step = Math.floor(pseudoRandom() * (maxStep * 2 + 1)) - maxStep;
+      currentPitch = getScaleStep(currentPitch, scale, step);
+    } else if (scale.length > 0) {
+      const step = Math.floor(pseudoRandom() * (config.maxInterval * 2 + 1)) - config.maxInterval;
       currentPitch = getScaleStep(currentPitch, scale, step);
     } else {
       // Chromatic stepwise

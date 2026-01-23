@@ -1,13 +1,16 @@
 /**
  * Harmonic Arpeggio Pattern
  * Builds triad from scale (root, third, fifth).
- * Arpeggiates pattern: [root, fifth, third, fifth] in eighth notes.
- * Velocity 10-15 below melody.
+ * Arpeggiates pattern based on config.
+ * Velocity below melody.
  */
-import { buildChord, noteToMidi } from "../../note-utils.js";
 
-const VELOCITY_REDUCTION = 12; // Below melody average
-const LEGATO_DURATION_FACTOR = 0.9;
+import { buildChord, noteToMidi } from "../../note-utils.js";
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply harmonic arpeggio pattern to a track.
@@ -23,11 +26,18 @@ const LEGATO_DURATION_FACTOR = 0.9;
 function apply(midi, options) {
   const { track, section, tempo, scale = [], pitches = [] } = options;
 
-  const { start_time, end_time, velocity_avg = 80 } = section;
+  const { end_time, velocity_avg = 80 } = section;
 
-  // Calculate timing
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.harmonic_arpeggio;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Calculate timing from config
   const quarterNote = 60 / tempo;
-  const eighthNote = quarterNote / 2;
+  const noteValue = quarterNote * config.noteValue;
+  const noteDuration = noteValue * config.durationFactor;
 
   // Determine root note from scale or section
   let root;
@@ -49,28 +59,31 @@ function apply(midi, options) {
     chord.push(chord[chord.length - 1] + 4); // Add approximate third
   }
 
-  // Arpeggio pattern: [root, fifth, third, fifth]
-  const arpeggioPattern = [chord[0], chord[2], chord[1], chord[2]];
+  // Build arpeggio pattern from config indices
+  const arpeggioPattern = config.pattern.map((index) => {
+    // Clamp index to valid chord range
+    const clampedIndex = Math.min(index, chord.length - 1);
+    return chord[clampedIndex];
+  });
 
-  // Velocity slightly below melody
-  const arpeggioVelocity =
-    Math.max(20, velocity_avg - VELOCITY_REDUCTION) / 127;
+  // Apply velocity modifier from config
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
-  let currentTime = start_time;
+  let currentTime = startTime;
   let patternIndex = 0;
 
   // Fill section with arpeggio
-  while (currentTime + eighthNote <= end_time) {
+  while (currentTime + noteValue <= end_time) {
     const pitch = arpeggioPattern[patternIndex % arpeggioPattern.length];
 
     track.addNote({
       midi: pitch,
       time: currentTime,
-      duration: eighthNote * LEGATO_DURATION_FACTOR,
-      velocity: arpeggioVelocity,
+      duration: noteDuration,
+      velocity: adjustedVelocity / 127,
     });
 
-    currentTime += eighthNote;
+    currentTime += noteValue;
     patternIndex++;
   }
 

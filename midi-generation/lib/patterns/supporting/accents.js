@@ -1,17 +1,18 @@
 /**
  * Minimal Accents Pattern
- * Sparse notes (one every 3-4 seconds).
+ * Sparse notes at configured intervals.
  * Random pitches from range.
- * Short duration (0.3 seconds).
+ * Short duration.
  * Occasional punctuation.
  */
 
 import { noteToMidi } from "../../note-utils.js";
-
-const MIN_INTERVAL_SECONDS = 3;
-const MAX_INTERVAL_SECONDS = 4;
-const ACCENT_DURATION = 0.3;
-const STACCATO_FACTOR = 0.4;
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+  humanizeValue,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply minimal accents pattern to a track.
@@ -25,10 +26,23 @@ const STACCATO_FACTOR = 0.4;
 function apply(midi, options) {
   const { track, section, pitches = [] } = options;
 
-  const { start_time, end_time, velocity_avg = 70, pitch_range } = section;
+  const { end_time, velocity_avg = 70, pitch_range } = section;
+
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.minimal_accents;
+  const spacingConfig = PATTERN_STRATEGIES.rhythmicSpacing.accents;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Calculate note duration from config
+  const noteDuration = config.duration * config.durationFactor;
+
+  // Apply velocity modifier
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
   // Determine available pitches
-  let availablePitches = pitches;
+  let availablePitches = [...pitches];
   if (availablePitches.length === 0 && pitch_range) {
     const lowNote = noteToMidi(pitch_range.low);
     const highNote = noteToMidi(pitch_range.high);
@@ -42,15 +56,15 @@ function apply(midi, options) {
   }
 
   // Simple seeded random for reproducible results
-  let seed = (Math.floor(start_time * 1000) % 1000) + 42;
+  let seed = (Math.floor(startTime * 1000) % 1000) + 42;
   const pseudoRandom = () => {
     seed = (seed * 1103515245 + 12345) % 2147483648;
     return seed / 2147483648;
   };
 
-  let currentTime = start_time;
+  let currentTime = startTime;
 
-  while (currentTime + ACCENT_DURATION <= end_time) {
+  while (currentTime + noteDuration <= end_time) {
     // Pick random pitch
     const pitchIndex = Math.floor(pseudoRandom() * availablePitches.length);
     const pitch = availablePitches[pitchIndex];
@@ -58,14 +72,16 @@ function apply(midi, options) {
     track.addNote({
       midi: pitch,
       time: currentTime,
-      duration: ACCENT_DURATION * STACCATO_FACTOR,
-      velocity: velocity_avg / 127,
+      duration: noteDuration,
+      velocity: adjustedVelocity / 127,
     });
 
-    // Random interval until next accent (3-4 seconds)
-    const interval =
-      MIN_INTERVAL_SECONDS +
-      pseudoRandom() * (MAX_INTERVAL_SECONDS - MIN_INTERVAL_SECONDS);
+    // Random interval until next accent from config range
+    const baseInterval = config.minInterval +
+      pseudoRandom() * (config.maxInterval - config.minInterval);
+
+    // Apply humanization
+    const interval = humanizeValue(baseInterval, spacingConfig.humanize, pseudoRandom);
     currentTime += interval;
   }
 

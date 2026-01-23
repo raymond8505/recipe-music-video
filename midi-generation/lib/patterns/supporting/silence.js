@@ -1,6 +1,7 @@
 /**
  * Silence Pattern
  * No notes generated - track inactive for this section.
+ * Late entry has no effect since no notes are produced.
  */
 
 /**
@@ -11,6 +12,7 @@
  */
 function apply(midi, options) {
   // Intentionally do nothing - silence means no notes
+  // Note: late_entry is supported but has no effect since no notes are generated
   return midi;
 }
 export default { apply };

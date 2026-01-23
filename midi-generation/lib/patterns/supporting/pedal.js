@@ -2,14 +2,15 @@
  * Foundation Pedal Pattern
  * Single sustained note for entire section duration.
  * Uses low note from pitch range (bottom quartile).
- * Quiet (15-25 velocity below melody).
- * Provides harmonic grounding.
+ * Quiet, provides harmonic grounding.
  */
 
 import { noteToMidi } from "../../note-utils.js";
-
-const VELOCITY_REDUCTION = 20;
-const SUSTAIN_GAP = 0.05; // Small gap at end to avoid clipping
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply foundation pedal pattern to a track.
@@ -24,14 +25,20 @@ const SUSTAIN_GAP = 0.05; // Small gap at end to avoid clipping
 function apply(midi, options) {
   const { track, section, scale = [], pitches = [] } = options;
 
-  const { start_time, end_time, velocity_avg = 80, pitch_range } = section;
+  const { end_time, velocity_avg = 80, pitch_range } = section;
 
-  // Determine pedal note (low note from bottom quartile)
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.foundation_pedal;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Determine pedal note based on config pitch selection
   let pedalNote;
 
   if (pitches.length > 0) {
-    // Use bottom quartile
-    const quartileIndex = Math.floor(pitches.length / 4);
+    // Use quartile position from config
+    const quartileIndex = Math.floor(pitches.length * config.quartilePosition);
     pedalNote = pitches[Math.max(0, quartileIndex)];
   } else if (pitch_range) {
     // Use low end of range
@@ -44,17 +51,17 @@ function apply(midi, options) {
     pedalNote = 36;
   }
 
-  // Calculate duration (full section minus small gap)
-  const duration = end_time - start_time - SUSTAIN_GAP;
+  // Calculate duration (from start to end minus small gap from config)
+  const duration = end_time - startTime - config.sustainGap;
 
-  // Velocity is quiet, below melody
-  const pedalVelocity = Math.max(15, velocity_avg - VELOCITY_REDUCTION) / 127;
+  // Apply velocity modifier from config
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
   track.addNote({
     midi: pedalNote,
-    time: start_time,
+    time: startTime,
     duration: Math.max(0.1, duration),
-    velocity: pedalVelocity,
+    velocity: adjustedVelocity / 127,
   });
 
   return midi;

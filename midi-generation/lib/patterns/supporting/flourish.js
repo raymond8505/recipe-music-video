@@ -1,15 +1,17 @@
 /**
  * Decorative Flourish Pattern
- * Appears at 60-70% through the section.
- * 4 quick ascending notes (sixteenth note rhythm).
+ * Appears at configured point through the section.
+ * Quick ascending/descending notes (configurable rhythm).
  * Upper register of pitch range.
  * Brief, ornamental.
  */
 
 import { noteToMidi } from "../../note-utils.js";
-const FLOURISH_POSITION = 0.65; // 65% through section
-const FLOURISH_NOTE_COUNT = 4;
-const VELOCITY_BOOST = 5; // Slightly brighter than surroundings
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply decorative flourish pattern to a track.
@@ -25,64 +27,91 @@ const VELOCITY_BOOST = 5; // Slightly brighter than surroundings
 function apply(midi, options) {
   const { track, section, tempo, scale = [], pitches = [] } = options;
 
-  const { start_time, end_time, velocity_avg = 80, pitch_range } = section;
+  const { end_time, velocity_avg = 80, pitch_range } = section;
+
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.decorative_flourish;
+
+  // Handle late entry - use section late_entry if provided, otherwise use config appearTime
+  // Section late_entry takes precedence
+  let flourishStart;
+  if (section.late_entry !== undefined && section.late_entry > 0) {
+    flourishStart = calculateLateEntryStart(section);
+  } else {
+    // Use config appearTime as built-in late entry for this pattern
+    const sectionDuration = end_time - section.start_time;
+    flourishStart = section.start_time + sectionDuration * config.appearTime;
+  }
 
   // Calculate timing
   const quarterNote = 60 / tempo;
-  const sixteenthNote = quarterNote / 4;
-
-  // Determine when flourish starts (60-70% through section)
-  const sectionDuration = end_time - start_time;
-  const flourishStart = start_time + sectionDuration * FLOURISH_POSITION;
+  const noteValue = quarterNote * config.noteValue;
+  const noteDuration = noteValue * config.durationFactor;
 
   // Determine pitches for flourish (upper register)
   let flourishPitches = [];
+  const noteCount = config.noteCount;
 
-  if (pitches.length >= FLOURISH_NOTE_COUNT) {
+  if (pitches.length >= noteCount) {
     // Use top quarter of available pitches
     const startIndex = Math.floor(pitches.length * 0.75);
-    flourishPitches = pitches.slice(
-      startIndex,
-      startIndex + FLOURISH_NOTE_COUNT,
-    );
-  } else if (scale.length >= FLOURISH_NOTE_COUNT) {
+    flourishPitches = pitches.slice(startIndex, startIndex + noteCount);
+  } else if (scale.length >= noteCount) {
     // Use top quarter of scale
     const startIndex = Math.floor(scale.length * 0.75);
-    flourishPitches = scale.slice(startIndex, startIndex + FLOURISH_NOTE_COUNT);
+    flourishPitches = scale.slice(startIndex, startIndex + noteCount);
   } else if (pitch_range) {
-    // Build ascending pitches from upper range
+    // Build pitches from upper range
     const highNote = noteToMidi(pitch_range.high);
-    for (let i = 0; i < FLOURISH_NOTE_COUNT; i++) {
-      flourishPitches.push(highNote - (FLOURISH_NOTE_COUNT - 1 - i) * 2);
+    for (let i = 0; i < noteCount; i++) {
+      flourishPitches.push(highNote - (noteCount - 1 - i) * 2);
     }
   } else {
     // Default ascending flourish
     flourishPitches = [72, 74, 76, 79]; // C5, D5, E5, G5
   }
 
-  // Ensure we have exactly 4 ascending notes
-  while (flourishPitches.length < FLOURISH_NOTE_COUNT) {
+  // Ensure we have exactly the configured number of notes
+  while (flourishPitches.length < noteCount) {
     const lastPitch = flourishPitches[flourishPitches.length - 1] || 72;
     flourishPitches.push(lastPitch + 2);
   }
 
-  // Sort ascending
+  // Apply direction from config
   flourishPitches.sort((a, b) => a - b);
-  flourishPitches = flourishPitches.slice(0, FLOURISH_NOTE_COUNT);
+  flourishPitches = flourishPitches.slice(0, noteCount);
 
-  // Velocity slightly boosted
-  const flourishVelocity = Math.min(127, velocity_avg + VELOCITY_BOOST) / 127;
+  if (config.direction === 'descending') {
+    flourishPitches.reverse();
+  } else if (config.direction === 'random') {
+    // Shuffle using seeded random
+    let seed = Math.floor(flourishStart * 1000) % 1000;
+    const pseudoRandom = () => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed / 2147483648;
+    };
+    for (let i = flourishPitches.length - 1; i > 0; i--) {
+      const j = Math.floor(pseudoRandom() * (i + 1));
+      [flourishPitches[i], flourishPitches[j]] = [flourishPitches[j], flourishPitches[i]];
+    }
+  }
+  // 'ascending' is default (already sorted ascending)
 
-  // Add flourish notes
+  // Apply velocity modifier from config
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
+
+  // Add flourish notes - ensure we don't exceed end_time
   let currentTime = flourishStart;
   flourishPitches.forEach((pitch) => {
+    if (currentTime + noteDuration > end_time) return;
+
     track.addNote({
       midi: Math.min(127, Math.max(0, pitch)),
       time: currentTime,
-      duration: sixteenthNote * 0.8, // Slightly detached
-      velocity: flourishVelocity,
+      duration: noteDuration,
+      velocity: adjustedVelocity / 127,
     });
-    currentTime += sixteenthNote;
+    currentTime += noteValue;
   });
 
   return midi;

@@ -3,7 +3,11 @@
  * Plays the theme exactly as defined - no transformation.
  */
 
-const LEGATO_DURATION_FACTOR = 0.95;
+import {
+  PATTERN_STRATEGIES,
+  calculateLateEntryStart,
+  applyVelocityModifier,
+} from "../../../config/pattern-strategies.js";
 
 /**
  * Apply thematic statement to a track.
@@ -24,13 +28,23 @@ function apply(midi, options) {
     );
   }
 
+  // Get configuration
+  const config = PATTERN_STRATEGIES.patterns.thematic_statement;
+  const durationFactor = config.durationFactor;
+
   const { notes, rhythm } = theme;
-  const { start_time, velocity_avg = 80 } = section;
+  const { end_time, velocity_avg = 80 } = section;
+
+  // Handle late entry
+  const startTime = calculateLateEntryStart(section);
+
+  // Apply velocity modifier
+  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
 
   // Calculate duration of a quarter note in seconds
   const quarterNote = 60 / tempo;
 
-  let currentTime = start_time;
+  let currentTime = startTime;
 
   // Play each note of the theme exactly as defined
   notes.forEach((pitch, index) => {
@@ -38,11 +52,14 @@ function apply(midi, options) {
     const beatDuration = rhythm[index] || 1;
     const duration = beatDuration * quarterNote;
 
+    // Ensure we don't exceed end_time
+    if (currentTime + duration * durationFactor > end_time) return;
+
     track.addNote({
       midi: pitch,
       time: currentTime,
-      duration: duration * LEGATO_DURATION_FACTOR,
-      velocity: velocity_avg / 127,
+      duration: duration * durationFactor,
+      velocity: adjustedVelocity / 127,
     });
 
     currentTime += duration;
