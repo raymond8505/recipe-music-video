@@ -1,0 +1,15 @@
+{
+  "name": "recipe-midi-generation",
+  "version": "1.0.0",
+  "description": "Generates MIDI files from recipe-based musical compositions",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "generate": "node index.js",
+    "test": "node --test"
+  },
+  "keywords": ["midi", "music", "recipe", "generation"],
+  "dependencies": {
+    "@tonejs/midi": "^2.0.28"
+  }
+}
