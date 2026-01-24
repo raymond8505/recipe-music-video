@@ -42,7 +42,10 @@ function apply(midi, options) {
   const startTime = calculateLateEntryStart(section);
 
   // Apply velocity modifier
-  const adjustedVelocity = applyVelocityModifier(velocity_avg, config.velocityModifier);
+  const adjustedVelocity = applyVelocityModifier(
+    velocity_avg,
+    config.velocityModifier,
+  );
 
   const quarterNote = 60 / tempo;
   let currentTime = startTime;
@@ -81,7 +84,11 @@ function apply(midi, options) {
   while (currentTime + extensionDuration * durationFactor <= end_time) {
     // Move by configured step size in the contour direction
     if (scale.length > 0) {
-      currentPitch = getScaleStep(currentPitch, scale, stepDirection * extensionStepSize);
+      currentPitch = getScaleStep(
+        currentPitch,
+        scale,
+        stepDirection * extensionStepSize,
+      );
     } else {
       // Chromatic stepwise motion
       currentPitch += stepDirection * 2; // Whole step

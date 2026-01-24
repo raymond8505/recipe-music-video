@@ -21,10 +21,17 @@ import foundationPedal from "./patterns/supporting/pedal.js";
 import decorativeFlourish from "./patterns/supporting/flourish.js";
 import minimalAccents from "./patterns/supporting/accents.js";
 import silence from "./patterns/supporting/silence.js";
+import sustainedPad from "./patterns/supporting/sustained-pad.js";
+
+import gentleShaker from "./patterns/percussion/gentle-shaker.js";
+import rhythmicFoundation from "./patterns/percussion/rhythmic-foundation.js";
+import handPercussion from "./patterns/percussion/hand-percussion.js";
+import accentHits from "./patterns/percussion/accent-hits.js";
 
 // Lazy-load pattern modules to avoid circular dependencies
 let thematicPatterns = null;
 let supportingPatterns = null;
+let percussionPatterns = null;
 
 function loadPatterns() {
   if (thematicPatterns === null) {
@@ -50,6 +57,16 @@ function loadPatterns() {
       decorative_flourish: decorativeFlourish,
       minimal_accents: minimalAccents,
       silence: silence,
+      sustained_pad: sustainedPad,
+    };
+  }
+
+  if (percussionPatterns === null) {
+    percussionPatterns = {
+      gentle_shaker: gentleShaker,
+      rhythmic_foundation: rhythmicFoundation,
+      hand_percussion: handPercussion,
+      accent_hits: accentHits,
     };
   }
 }
@@ -62,7 +79,10 @@ function loadPatterns() {
 function getPattern(patternType) {
   loadPatterns();
   return (
-    thematicPatterns[patternType] || supportingPatterns[patternType] || null
+    thematicPatterns[patternType] ||
+    supportingPatterns[patternType] ||
+    percussionPatterns[patternType] ||
+    null
   );
 }
 
@@ -87,12 +107,26 @@ function isSupportingPattern(patternType) {
 }
 
 /**
+ * Check if a pattern type is a percussion pattern.
+ * @param {string} patternType - The pattern type name
+ * @returns {boolean} True if percussion pattern
+ */
+function isPercussionPattern(patternType) {
+  loadPatterns();
+  return patternType in percussionPatterns;
+}
+
+/**
  * Get all registered pattern names.
  * @returns {string[]} Array of pattern type names
  */
 function getAllPatternNames() {
   loadPatterns();
-  return [...Object.keys(thematicPatterns), ...Object.keys(supportingPatterns)];
+  return [
+    ...Object.keys(thematicPatterns),
+    ...Object.keys(supportingPatterns),
+    ...Object.keys(percussionPatterns),
+  ];
 }
 
 /**
@@ -102,13 +136,18 @@ function getAllPatternNames() {
  */
 function isValidPattern(patternType) {
   loadPatterns();
-  return patternType in thematicPatterns || patternType in supportingPatterns;
+  return (
+    patternType in thematicPatterns ||
+    patternType in supportingPatterns ||
+    patternType in percussionPatterns
+  );
 }
 
 export {
   getPattern,
   isThematicPattern,
   isSupportingPattern,
+  isPercussionPattern,
   getAllPatternNames,
   isValidPattern,
 };

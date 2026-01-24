@@ -236,6 +236,95 @@ export const PATTERN_STRATEGIES = {
      */
     silence: {
       // No configuration needed - this pattern produces no notes
+    },
+
+    // ====== PERCUSSION PATTERNS ======
+
+    /**
+     * Gentle Shaker - continuous light shaker for subtle rhythmic texture
+     * Very rapid alternating pattern, quiet velocity
+     */
+    gentle_shaker: {
+      noteValue: 0.125,           // 32nd notes (very fast shaker)
+                                  // Recommended range: 0.0625 (64th) to 0.25 (16th)
+      pattern: [1, 0, 1, 0],      // On-off pattern for alternating hits
+      velocityMultiplier: 0.3,    // 30% of section velocity (very quiet)
+                                  // Recommended range: 0.2-0.4
+      pitch: 70                   // MIDI note for shaker (GM: Maracas)
+                                  // Other options: 82 (Shaker)
+    },
+
+    /**
+     * Rhythmic Foundation - basic drum pattern (kick, snare, hi-hat)
+     * Standard 4/4 rock/pop pattern for driving energy
+     */
+    rhythmic_foundation: {
+      kick: {
+        beats: [0, 2],            // Beats 1 and 3 (0-indexed within 4-beat measure)
+        pitch: 36,                // GM Bass Drum 1
+        velocityMultiplier: 0.8   // Strong kick
+      },
+      snare: {
+        beats: [1, 3],            // Beats 2 and 4
+        pitch: 38,                // GM Acoustic Snare
+        velocityMultiplier: 0.75  // Slightly softer than kick
+      },
+      hihat: {
+        noteValue: 0.5,           // Eighth notes
+        pitch: 42,                // GM Closed Hi-Hat
+        velocityMultiplier: 0.5   // Quiet hi-hat
+      }
+    },
+
+    /**
+     * Hand Percussion - syncopated conga/bongo patterns
+     * Ethnic/energetic feel with varied pitches
+     */
+    hand_percussion: {
+      pattern: [
+        { offset: 0, pitch: 64, velocityMultiplier: 0.8 },    // Low Conga
+        { offset: 0.5, pitch: 63, velocityMultiplier: 0.6 },  // Open High Conga
+        { offset: 1.5, pitch: 64, velocityMultiplier: 0.7 },  // Low Conga
+        { offset: 2, pitch: 62, velocityMultiplier: 0.8 },    // Mute High Conga
+        { offset: 3, pitch: 64, velocityMultiplier: 0.6 }     // Low Conga
+      ],
+      loopLength: 4.0,            // Pattern repeats every 4 beats
+      noteDuration: 0.3           // Duration factor for hits
+    },
+
+    /**
+     * Accent Hits - occasional single hits for structural punctuation
+     * Cymbal crashes or similar at key moments
+     */
+    accent_hits: {
+      hitsPerSection: 3,          // Number of accent hits per section
+                                  // Recommended range: 2-4
+      instruments: [
+        { pitch: 49, name: 'Crash Cymbal 1' },
+        { pitch: 51, name: 'Ride Cymbal 1' },
+        { pitch: 57, name: 'Crash Cymbal 2' }
+      ],
+      velocityMultiplier: 0.7,    // 70% of section velocity
+      duration: 2.0               // Sustain for 2 seconds (cymbals ring)
+    },
+
+    // ====== PAD PATTERNS ======
+
+    /**
+     * Sustained Pad - continuous harmonic wash for atmospheric depth
+     * Slow-changing chords, very quiet, background texture
+     */
+    sustained_pad: {
+      chordVoices: 3,             // Number of notes in pad chord
+      voicingSpread: [0, 4, 7],   // Intervals: root, major third, perfect fifth
+                                  // Other options: [0, 3, 7] minor, [0, 5, 7] sus4
+      updateInterval: 4.0,        // Change chord every 4 beats
+                                  // Recommended range: 2.0-8.0
+      releaseOverlap: 0.5,        // Overlap time between chords for smooth transition
+      velocityMultiplier: 0.4,    // Very quiet (40% of section velocity)
+                                  // Recommended range: 0.3-0.5
+      pitchRangePosition: 0.3     // Use lower third of pitch range for root
+                                  // Recommended range: 0.2-0.4
     }
   }
 };
