@@ -45,13 +45,13 @@ fs.writeFileSync(midiFilePath, midiBytes);
 
 convertMidiToWav(midiFilePath, wavFilePath, SOUNDFONT_PATH);
 
-console.log("Getting Video Spec");
+console.log("Fetching Video Spec");
 
-// const videoResult = await longLivedFetch(VIDEO_WEBHOOK_URL, {
-//   method: "POST",
-//   headers: { "Content-Type": "application/json" },
-//   body: JSON.stringify(midiResult),
-// });
+const videoResult = await longLivedFetch(VIDEO_WEBHOOK_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(midiResult),
+});
 
-// console.log("Creating Slideshow");
-// createSlideshowFromSpec(videoResult, wavFilePath, mp4FilePath);
+console.log("Creating Slideshow");
+createSlideshowFromSpec(videoResult, wavFilePath, mp4FilePath);

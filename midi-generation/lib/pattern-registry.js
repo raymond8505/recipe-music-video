@@ -11,7 +11,12 @@ import thematicInverted from "./patterns/thematic/inverted.js";
 import thematicRetrograde from "./patterns/thematic/retrograde.js";
 
 import harmonicArpeggio from "./patterns/supporting/arpeggio.js";
+import melodicCounterpoint from "./patterns/supporting/counterpoint.js";
 import gentleBreathing from "./patterns/supporting/breathing.js";
+import sparseBreathing from "./patterns/supporting/sparse-breathing.js";
+import verySparseBreathing from "./patterns/supporting/very-sparse-breathing.js";
+import moderateBreathing from "./patterns/supporting/moderate-breathing.js";
+import activeBreathing from "./patterns/supporting/active-breathing.js";
 import foundationPedal from "./patterns/supporting/pedal.js";
 import decorativeFlourish from "./patterns/supporting/flourish.js";
 import minimalAccents from "./patterns/supporting/accents.js";
@@ -35,7 +40,12 @@ function loadPatterns() {
   if (supportingPatterns === null) {
     supportingPatterns = {
       harmonic_arpeggio: harmonicArpeggio,
+      melodic_counterpoint: melodicCounterpoint,
       gentle_breathing: gentleBreathing,
+      sparse_breathing: sparseBreathing,
+      very_sparse_breathing: verySparseBreathing,
+      moderate_breathing: moderateBreathing,
+      active_breathing: activeBreathing,
       foundation_pedal: foundationPedal,
       decorative_flourish: decorativeFlourish,
       minimal_accents: minimalAccents,

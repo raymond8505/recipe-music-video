@@ -53,6 +53,18 @@ export const PATTERN_STRATEGIES = {
       humanize: 0.1       // Random timing variation as fraction (±10%)
                           // Recommended range: 0.0-0.2
     },
+    very_sparse_breathing: {
+      interval: 4.0,      // One note every 4 beats (very spacious, minimal presence)
+      humanize: 0.1
+    },
+    moderate_breathing: {
+      interval: 2.0,      // One note every 2 beats (gentle rhythmic pulse)
+      humanize: 0.08
+    },
+    active_breathing: {
+      interval: 1.0,      // One note per beat (flowing, constant presence)
+      humanize: 0.05
+    },
     accents: {
       interval: 4.0,      // Beats between accent notes (sparse punctuation)
                           // Recommended range: 3.0-6.0
@@ -143,6 +155,26 @@ export const PATTERN_STRATEGIES = {
       maxInterval: 2,              // Max scale degrees between notes
                                    // Recommended range: 1-3
       velocityModifier: 0          // No adjustment (matches section velocity)
+    },
+
+    /**
+     * Melodic Counterpoint - active melodic line complementing primary melody
+     * More melodic than arpeggio, smoother than breathing patterns.
+     */
+    melodic_counterpoint: {
+      noteInterval: 0.75,          // Beats between notes (dotted eighth = 3:2 feel)
+                                   // Recommended range: 0.5-1.0
+      noteDuration: 0.9,           // Duration factor (slightly detached)
+                                   // Recommended range: 0.8-1.0
+      stepwiseBias: 0.7,           // 70% stepwise motion (1-2 semitones)
+                                   // Recommended range: 0.6-0.8
+      leapProbability: 0.2,        // 20% small leaps (3-5 semitones)
+                                   // Recommended range: 0.1-0.3
+      directionChangeEvery: 7,     // Change contour direction every N notes
+                                   // Recommended range: 5-10
+      startInRange: 0.4,           // Start at 40% through pitch range (lower-middle)
+                                   // Recommended range: 0.3-0.5
+      velocityModifier: -10        // Slightly below melody
     },
 
     /**
