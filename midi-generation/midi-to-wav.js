@@ -13,7 +13,7 @@ export default function convertMidiToWav(
   console.log("🎹 Converting MIDI to WAV with FluidSynth...");
 
   const exePath = path.resolve("./midi-generation/bin/fluidsynth/fluidsynth");
-  const command = `${exePath} -nil -F "${path.resolve(wavFilePath)}" "${path.resolve(soundFontPath)}" "${path.resolve(midiFilePath)}"`;
+  const command = `${exePath} -nil -F "${path.resolve(wavFilePath)}" "${path.resolve(soundFontPath)}" "${path.resolve(midiFilePath)}" -g 3.0`;
   console.log(`  Command: ${command}\n`);
 
   try {
