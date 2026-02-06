@@ -29,13 +29,7 @@ The workflow takes the MIDI spec, then generates slides and generates "scenes" t
 - - By Ensuring file generation logic is deterministic taking keyword specs, we keep the business logic and the configuration layers separate so generation code and prompt chain can be tested separately
 
 # How It Started
-<video controls width="640">
-  <source src="https://raw.githubusercontent.com/raymond8505/recipe-music-video/main/public/example/Spaghetti_Aglio_e_olio_v1.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://raw.githubusercontent.com/raymond8505/recipe-music-video/main/public/example/Spaghetti_Aglio_e_olio_v1.mp4
 
 # How It's Going
-<video controls width="640">
-  <source src="https://raw.githubusercontent.com/raymond8505/recipe-music-video/main/public/example/Spaghetti_Aglio_e_olio.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+https://raw.githubusercontent.com/raymond8505/recipe-music-video/main/public/example/Spaghetti_Aglio_e_olio.mp4
