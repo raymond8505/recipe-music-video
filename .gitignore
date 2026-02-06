@@ -2,9 +2,6 @@
 node_modules
 .VSCODE
 *.sf2
-*.midi
-*.wav
-*.mp4
 **/bin/
 **/media/
 settings.local.json
